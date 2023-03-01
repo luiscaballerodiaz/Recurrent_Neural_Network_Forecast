@@ -80,23 +80,32 @@ class DataPlot:
         plt.savefig('Loss results ' + tag + '.png', bbox_inches='tight')
         plt.close()
 
-    def plot_predictions(self, preds, target, models_to_load):
-        cmap = cm.get_cmap('tab10')
+    def plot_predictions(self, preds, mae, target, models_to_load, zoom_ini, zoom_samples=1000):
+        cmap = cm.get_cmap('Set1')
         colors = cmap.colors
-        fig, axes = plt.subplots(1, 1, figsize=(self.fig_width, self.fig_height))
-        for i in range(len(models_to_load)):
-            if len(models_to_load) == 1:
-                plt.plot(preds, ls='-', lw=2, color=colors[i % len(colors)],
-                         label='Prediction ({})'.format(models_to_load))
+        fig, axes = plt.subplots(2, 1, figsize=(self.fig_width, self.fig_height))
+        ax = axes.ravel()
+        zoom_end = zoom_ini + zoom_samples
+        txt = ''
+        for i in range(len(mae)):
+            if i == (len(mae) - 1):
+                ax[0].plot(preds[i], ls='--', lw=2, color='black', label='Dummy')
+                ax[1].plot(preds[i][zoom_ini:zoom_end], ls='--', lw=2, color='black', label='Dummy')
+                txt += '\nDUMMY MODEL KEEPING LAST VALUE MAE SCORE: {}'.format(mae[i])
             else:
-                plt.plot(preds[i], ls='-', lw=2, color=colors[i % len(colors)],
-                         label='Prediction ({})'.format(models_to_load[i]))
-        plt.plot(target, ls='--', lw=2, color='blue', label='Target')
-        plt.xlabel('TIME', fontweight='bold', fontsize=14)
-        plt.ylabel('TEMPERATURE [C]', fontweight='bold', fontsize=14)
-        plt.title('TESTING SET PREDICTION', fontweight='bold', fontsize=18)
-        plt.legend()
-        plt.grid()
+                ax[0].plot(preds[i], ls='-', lw=2, color=colors[i % len(colors)],
+                           label='Prediction ({})'.format(models_to_load[i]))
+                ax[1].plot(preds[i][zoom_ini:zoom_end], ls='-', lw=2,
+                           color=colors[i % len(colors)], label='Prediction ({})'.format(models_to_load[i]))
+                txt += '\nMODEL {} MAE SCORE: {}'.format(models_to_load[i], mae[i])
+        ax[0].plot(target, ls='--', lw=2, color='blue', label='Target')
+        ax[1].plot(target[zoom_ini:zoom_end], ls='--', lw=2, color='blue', label='Target')
+        for i in range(2):
+            ax[i].set_xlabel('SAMPLES', fontweight='bold', fontsize=14)
+            ax[i].set_ylabel('TEMPERATURE [C]', fontweight='bold', fontsize=14)
+            ax[i].legend()
+            ax[i].grid(visible=True)
+        fig.suptitle('TESTING SET PREDICTION\n' + txt, fontweight='bold', fontsize=18)
         fig.tight_layout()
-        plt.savefig('Testing set prediction.png', bbox_inches='tight')
+        plt.savefig('Testing set prediction (sample ini=' + str(zoom_ini) + ').png', bbox_inches='tight')
         plt.close()
