@@ -28,7 +28,7 @@ def generator(features_data, target_data, lookback, min_index, max_index, batch_
     i = min_index
     while True:
         if (i + batch_size) > max_index:
-            i = min_index + lookback
+            i = min_index
         samples = np.zeros([batch_size, lookback, features_data.shape[1]])
         target = np.zeros([batch_size])
         for j in range(i, i + batch_size):
