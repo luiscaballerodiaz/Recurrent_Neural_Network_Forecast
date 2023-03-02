@@ -95,6 +95,7 @@ class DataPlot:
             ax[1].plot(preds[i][zoom_ini:zoom_end], ls='-', lw=2,
                        color=colors[i % len(colors)], label='Prediction ({})'.format(models_to_load[i]))
             txt += '\nMODEL {} MAE SCORE: {}'.format(models_to_load[i], mae[i])
+        txt += '\nDUMMY MODEL KEEPING LAST VALUE MAE SCORE: {}'.format(mae[-1])
         ax[0].plot(target, ls='--', lw=2, color='blue', label='Target')
         ax[1].plot(target[zoom_ini:zoom_end], ls='--', lw=2, color='blue', label='Target')
         for i in range(2):
