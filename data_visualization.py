@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import numpy as np
 import math
+
 
 class DataPlot:
 
@@ -83,21 +85,16 @@ class DataPlot:
     def plot_predictions(self, preds, mae, target, models_to_load, zoom_ini, zoom_samples=1000):
         cmap = cm.get_cmap('Set1')
         colors = cmap.colors
+        zoom_end = zoom_ini + zoom_samples
         fig, axes = plt.subplots(2, 1, figsize=(self.fig_width, self.fig_height))
         ax = axes.ravel()
-        zoom_end = zoom_ini + zoom_samples
         txt = ''
-        for i in range(len(mae)):
-            if i == (len(mae) - 1):
-                ax[0].plot(preds[i], ls='--', lw=2, color='black', label='Dummy')
-                ax[1].plot(preds[i][zoom_ini:zoom_end], ls='--', lw=2, color='black', label='Dummy')
-                txt += '\nDUMMY MODEL KEEPING LAST VALUE MAE SCORE: {}'.format(mae[i])
-            else:
-                ax[0].plot(preds[i], ls='-', lw=2, color=colors[i % len(colors)],
-                           label='Prediction ({})'.format(models_to_load[i]))
-                ax[1].plot(preds[i][zoom_ini:zoom_end], ls='-', lw=2,
-                           color=colors[i % len(colors)], label='Prediction ({})'.format(models_to_load[i]))
-                txt += '\nMODEL {} MAE SCORE: {}'.format(models_to_load[i], mae[i])
+        for i in range(len(mae) - 1):
+            ax[0].plot(preds[i], ls='-', lw=2, color=colors[i % len(colors)],
+                       label='Prediction ({})'.format(models_to_load[i]))
+            ax[1].plot(preds[i][zoom_ini:zoom_end], ls='-', lw=2,
+                       color=colors[i % len(colors)], label='Prediction ({})'.format(models_to_load[i]))
+            txt += '\nMODEL {} MAE SCORE: {}'.format(models_to_load[i], mae[i])
         ax[0].plot(target, ls='--', lw=2, color='blue', label='Target')
         ax[1].plot(target[zoom_ini:zoom_end], ls='--', lw=2, color='blue', label='Target')
         for i in range(2):
@@ -107,5 +104,46 @@ class DataPlot:
             ax[i].grid(visible=True)
         fig.suptitle('TESTING SET PREDICTION\n' + txt, fontweight='bold', fontsize=18)
         fig.tight_layout()
-        plt.savefig('Testing set prediction (sample ini=' + str(zoom_ini) + ').png', bbox_inches='tight')
+        plt.savefig('Testing set prediction neural models (sample ini=' + str(zoom_ini) + ').png', bbox_inches='tight')
+        plt.close()
+
+        fig, axes = plt.subplots(2, 1, figsize=(self.fig_width, self.fig_height))
+        ax = axes.ravel()
+        txt = ''
+        ax[0].plot(preds[-1], ls='--', lw=2, color='black', label='Dummy')
+        ax[1].plot(preds[-1][zoom_ini:zoom_end], ls='--', lw=2, color='black', label='Dummy')
+        txt += '\nDUMMY MODEL KEEPING LAST VALUE MAE SCORE: {}'.format(mae[-1])
+        ax[0].plot(target, ls='--', lw=2, color='blue', label='Target')
+        ax[1].plot(target[zoom_ini:zoom_end], ls='--', lw=2, color='blue', label='Target')
+        for i in range(2):
+            ax[i].set_xlabel('SAMPLES', fontweight='bold', fontsize=14)
+            ax[i].set_ylabel('TEMPERATURE [C]', fontweight='bold', fontsize=14)
+            ax[i].legend()
+            ax[i].grid(visible=True)
+        fig.suptitle('TESTING SET PREDICTION\n' + txt, fontweight='bold', fontsize=18)
+        fig.tight_layout()
+        plt.savefig('Testing set prediction dummy model (sample ini=' + str(zoom_ini) + ').png', bbox_inches='tight')
+        plt.close()
+
+    def correlation_plot(self, dataset):
+        """Plot the correlation matrix among features"""
+        dataset = dataset.astype(float)
+        corr_matrix = np.array(dataset.corr())
+        fig, ax = plt.subplots(figsize=(self.fig_width, self.fig_height))
+        plt.pcolormesh(corr_matrix, cmap=plt.cm.cool)
+        plt.colorbar()
+        yrange = [x + 0.5 for x in range(corr_matrix.shape[0])]
+        xrange = [x + 0.5 for x in range(corr_matrix.shape[1])]
+        plt.xticks(xrange, dataset.keys(), rotation=75, ha='center')
+        ax.xaxis.tick_top()
+        plt.yticks(yrange, dataset.keys(), va='center')
+        for i in range(len(xrange)):
+            for j in range(len(yrange)):
+                ax.text(xrange[i], yrange[j], str(round(corr_matrix[j, i], 1)),
+                        ha="center", va="center", color="k", fontweight='bold', fontsize=12)
+        plt.xlabel("Features", weight='bold', fontsize=14)
+        plt.ylabel("Features", weight='bold', fontsize=14)
+        plt.title("Correlation matrix among all features", weight='bold', fontsize=24)
+        fig.tight_layout()
+        plt.savefig('Correlation matrix all features.png', bbox_inches='tight')
         plt.close()

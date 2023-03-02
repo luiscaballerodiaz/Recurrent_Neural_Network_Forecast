@@ -32,8 +32,8 @@ def generator(features_data, target_data, lookback, min_index, max_index, batch_
         samples = np.zeros([batch_size, lookback, features_data.shape[1]])
         target = np.zeros([batch_size])
         for j in range(i, i + batch_size):
-            samples[j-i, :, :] = features_data[j-lookback:j, :]
-            target[j-i] = target_data[j+lookforward-1]
+            samples[j-i, :, :] = features_data[j+1-lookback:j+1, :]
+            target[j-i] = target_data[j+lookforward]
         i += batch_size
         yield samples, target
 

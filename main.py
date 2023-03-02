@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 action = 1
 models_to_load = ['RNN trained model 32 outputs layer, dropout=0, recurrent dropout=0.5, learning rate=0.0001 and lookback=24.h5',
                   'CNN trained model 32 outputs layer, dropout=0.5, learning rate=0.0001 and lookback=24.h5']
+
 # General settings
 lookforward = 24
 batch_size = 32
@@ -20,7 +21,7 @@ val_ind = 225000
 patience_stop = 50
 
 # Model specific settings
-epochs = 80
+epochs = 100
 network = 'CNN'
 lookback_list = [24, 24, 24]
 outputs_list = [32, 32, 32]
@@ -45,6 +46,8 @@ print("Scrubbed data from CSV type: {} and shape: {}".format(type(df), df.shape)
 visualization.histogram(dataset=df, plot_name='Histogram', ncolumns=7)
 visualization.target_vs_feature(dataset=df, target=column_target,
                                 plot_name='Target vs feature correlation', ncolumns=7)
+visualization.correlation_plot(dataset=df)
+
 target = np.array(df[column_target])
 df_drop = df.drop(column_target, axis=1)
 features = np.array(df_drop)
@@ -71,19 +74,19 @@ if action == 0:
 
         model = utils.create_network(network, features, outputs, recurrent_dropout, dropout, learning_rate)
 
-        min_index_train = lookback
-        max_index_train = train_ind - lookforward - 1
+        min_index_train = lookback - 1
+        max_index_train = train_ind - lookforward
         train_gen = utils.generator(features, target, lookback=lookback, min_index=min_index_train,
                                     max_index=max_index_train, batch_size=batch_size, lookforward=lookforward)
-        min_index_val = train_ind + lookback + 1
-        max_index_val = val_ind - lookforward - 1
+        min_index_val = train_ind + 1 + lookback - 1
+        max_index_val = val_ind - lookforward
         val_gen = utils.generator(features, target, lookback=lookback, min_index=min_index_val,
                                   max_index=max_index_val, batch_size=batch_size, lookforward=lookforward)
 
         callbacks_list = callbacks.EarlyStopping(monitor='val_loss', patience=patience_stop)
-        history = model.fit(train_gen, steps_per_epoch=(max_index_train - min_index_train) // batch_size, epochs=epochs,
-                            callbacks=callbacks_list, validation_data=val_gen,
-                            validation_steps=(max_index_val - min_index_val) // batch_size)
+        history = model.fit(train_gen, steps_per_epoch=(max_index_train - min_index_train + 1) // batch_size,
+                            epochs=epochs, callbacks=callbacks_list, validation_data=val_gen,
+                            validation_steps=(max_index_val - min_index_val + 1) // batch_size)
 
         loss.append(history.history['loss'])
         val_loss.append(history.history['val_loss'])
@@ -99,21 +102,21 @@ elif action == 1:
         if 'lookback' in word:
             lookback = int(word[9:11])
             break
-    min_index = val_ind + lookback + 1
-    max_index = features.shape[0] - lookforward - 1
+    min_index = val_ind + 1 + lookback - 1
+    max_index = features.shape[0] - 1 - lookforward
     preds = []
     mae_models = []
     for n, model in zip(range(len(models_list)), models_list):
         test_gen = utils.generator(features, target, lookback=lookback, min_index=min_index, max_index=max_index,
                                    batch_size=batch_size, lookforward=lookforward)
-        mae_models.append(round(model.evaluate(test_gen, steps=(max_index - min_index) // batch_size), 2))
+        mae_models.append(round(model.evaluate(test_gen, steps=(max_index - min_index + 1) // batch_size), 2))
         print('MODEL {}\nTEST MAE LOSS: {}\n\n'.format(models_to_load[n], mae_models[n]))
-        preds.append(model.predict(test_gen, steps=(max_index - min_index) // batch_size))
+        preds.append(model.predict(test_gen, steps=(max_index - min_index + 1) // batch_size))
     dummy = []
     mae = 0
-    for i, index in enumerate(range(min_index, max_index+1)):
+    for index in range(min_index, max_index+1):
         dummy.append(target[index])
-        mae += abs(dummy[i] - target[index + lookforward])
+        mae += abs(dummy[-1] - target[index + lookforward])
     preds.append(dummy)
     mae_models.append(round(mae / (1 + max_index - min_index), 2))
     print('DUMMY MODEL\nTEST MAE LOSS: {}\n\n'.format(mae_models[-1]))
