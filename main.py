@@ -109,9 +109,11 @@ elif action == 1:
     for n, model in zip(range(len(models_list)), models_list):
         test_gen = utils.generator(features, target, lookback=lookback, min_index=min_index, max_index=max_index,
                                    batch_size=batch_size, lookforward=lookforward)
-        mae_models.append(round(model.evaluate(test_gen, steps=(max_index - min_index + 1) // batch_size), 2))
+        mae_models.append(round(model.evaluate(test_gen, steps=(max_index - min_index) // batch_size), 2))
         print('MODEL {}\nTEST MAE LOSS: {}\n\n'.format(models_to_load[n], mae_models[n]))
-        preds.append(model.predict(test_gen, steps=(max_index - min_index + 1) // batch_size))
+        test_gen = utils.generator(features, target, lookback=lookback, min_index=min_index, max_index=max_index,
+                                   batch_size=batch_size, lookforward=lookforward)
+        preds.append(model.predict(test_gen, steps=(max_index - min_index) // batch_size))
     dummy = []
     mae = 0
     for index in range(min_index, max_index+1):
